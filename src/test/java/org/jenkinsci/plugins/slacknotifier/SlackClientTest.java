@@ -11,6 +11,8 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.Arrays;
 
+import java.util.Collections;
+import java.util.List;
 import org.junit.Test;
 
 import com.google.gson.Gson;
@@ -21,7 +23,7 @@ public class SlackClientTest {
 
 	@Test
 	public void canGenerateFullSuccessfulSlackMessage() throws FileNotFoundException {
-		JsonElement element = loadTestResultFile("successful-result.json");
+		List<JsonElement> element = Collections.singletonList(loadTestResultFile("successful-result.json"));
 		assertNotNull(element);
 		CucumberResult result = new SlackClient("http://slack.com/", "http://jenkins:8080/", "channel", false).processResults(element);
 		assertNotNull(result);
@@ -37,7 +39,7 @@ public class SlackClientTest {
 
 	@Test
 	public void canGenerateMinimalSuccessfulSlackMessage() throws FileNotFoundException {
-		JsonElement element = loadTestResultFile("successful-result.json");
+		List<JsonElement> element = Collections.singletonList(loadTestResultFile("successful-result.json"));
 		assertNotNull(element);
 		CucumberResult result = new SlackClient("http://slack.com/", "http://jenkins:8080/", "channel", true).processResults(element);
 		assertNotNull(result);
@@ -52,7 +54,7 @@ public class SlackClientTest {
 	
 	@Test
 	public void canGenerateFullFailedSlackMessage() throws FileNotFoundException {
-		JsonElement element = loadTestResultFile("failed-result.json");
+		List<JsonElement> element = Collections.singletonList(loadTestResultFile("failed-result.json"));
 		assertNotNull(element);
 		CucumberResult result = new SlackClient("http://slack.com/", "http://jenkins:8080/", "channel", false).processResults(element);
 		assertNotNull(result);
@@ -64,7 +66,7 @@ public class SlackClientTest {
 
 	@Test
 	public void canGenerateMinimalFailedSlackMessage() throws FileNotFoundException {
-		JsonElement element = loadTestResultFile("failed-result.json");
+		List<JsonElement> element = Collections.singletonList(loadTestResultFile("failed-result.json"));
 		assertNotNull(element);
 		CucumberResult result = new SlackClient("http://slack.com/", "http://jenkins:8080/", "channel", true).processResults(element);
 		assertNotNull(result);

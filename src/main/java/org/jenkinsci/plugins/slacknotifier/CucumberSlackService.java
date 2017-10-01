@@ -1,16 +1,19 @@
 package org.jenkinsci.plugins.slacknotifier;
 
-import hudson.FilePath;
-import hudson.model.Run;
-import jenkins.model.JenkinsLocationConfiguration;
-
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.util.logging.Logger;
-
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.stream.JsonReader;
+import hudson.FilePath;
+import hudson.model.Run;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.logging.Logger;
+import jenkins.model.JenkinsLocationConfiguration;
+import org.apache.tools.ant.DirectoryScanner;
+import sun.rmi.runtime.Log;
 
 public class CucumberSlackService {
 
@@ -28,25 +31,36 @@ public class CucumberSlackService {
 		LOG.info("Posting cucumber reports to slack for '" + build.getParent().getDisplayName() + "'");
 		LOG.info("Cucumber reports are in '" + workspace + "'");
 
-		JsonElement jsonElement = getResultFileAsJsonElement(workspace, json);
+		List<JsonElement> jsonElements = getResultFileAsJsonElement(workspace, json);
+
 		SlackClient client = new SlackClient(webhookUrl, jenkinsUrl, channel, hideSuccessfulResults);
-		client.postToSlack(jsonElement, build.getParent().getDisplayName(), build.getNumber(), extra);
+		client.postToSlack(jsonElements, build.getParent().getDisplayName(), build.getNumber(), extra);
 	}
 
-	private JsonElement getResultFileAsJsonElement(FilePath workspace, String json) {
+	public static List<JsonElement> getResultFileAsJsonElement(FilePath workspace, String json) {
 		final FilePath jsonPath = new FilePath(workspace, json);
 		LOG.info("file path: " + jsonPath);
-		
-		final Gson gson = new Gson();
-		try {
-			final JsonReader jsonReader = new JsonReader(new InputStreamReader(jsonPath.read()));
-			return gson.fromJson(jsonReader, JsonElement.class);
-		} catch (IOException e) {
-			LOG.severe("Exception occurred while reading test results: " + e);
-			throw new RuntimeException("Exception occurred while reading test results", e);
-		} catch (InterruptedException e) {
-			LOG.severe("Exception occurred while reading test results: " + e);
-			throw new RuntimeException("Exception occurred while reading test results", e);
+
+		DirectoryScanner scanner = new DirectoryScanner();
+		scanner.setIncludes(new String[]{json});
+		scanner.setBasedir(workspace.getRemote());
+		scanner.setCaseSensitive(false);
+		scanner.scan();
+		String[] files = scanner.getIncludedFiles();
+
+		List<JsonElement> result = new ArrayList<JsonElement>();
+
+		for (String file : files) {
+			final Gson gson = new Gson();
+			try {
+				final JsonReader jsonReader = new JsonReader(new InputStreamReader(new FileInputStream(workspace.getRemote()+"/"+file)));
+				result.add((JsonElement) gson.fromJson(jsonReader, JsonElement.class));
+			} catch (IOException e) {
+				LOG.severe("Exception occurred while reading test results: " + e);
+				throw new RuntimeException("Exception occurred while reading test results", e);
+			}
 		}
+
+		return result;
 	}
 }
